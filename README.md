@@ -10,7 +10,7 @@ like: "这手机的画面极好，操作也比较流畅。不过拍照真的太�
  A list containing six fields(Pos, Neg, AvgPos, AvgNeg, StdPos, StdNeg) of the given tweet.
  like:[3.0, 5.0, 0.75, 1.25, 0.4330127018922193, 1.6393596310755001] 
 
-##Files
+##Files		
 ####sentiment dictionary source
 sentiment
 

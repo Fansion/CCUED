@@ -8,9 +8,11 @@ __author__ = 'Frank Fu'
 import numpy as np
 import re
 import jieba.posseg
+import logging
+
 #Load user dictionary to increse segmentation accuracy
 jieba.load_userdict('/usr/local/lib/python2.7/dist-packages/jieba/dict.txt')
-
+logging.basicConfig(level=logging.INFO)
 
 def getTextData(filePath):
     lines = file(filePath).readlines()
@@ -20,21 +22,28 @@ def getTextData(filePath):
     lines = [line.replace(' ','') for line in lines if line.replace(' ', '')] #del empty line and spaces
     return lines
 
+pathPrefix = 'BasicEmotionDict/'
+
+logging.info('Begin to retrieve data from files to variables in memory')
+logging.info('......')
+
 # Load sentiment dictionary
-posdict = getTextData('BasicEmotionDict/posdict.txt')
-# print posdict[0].encode('utf-8')
-negdict = getTextData('BasicEmotionDict/negdict.txt')
+poswords = getTextData(pathPrefix + 'poswords')
+negwords = getTextData(pathPrefix + 'negwords')
+neuralwords = getTextData(pathPrefix + 'neuralwords')
 
 # Load adverbs of degree dictionary
-mostdict = getTextData('BasicEmotionDict/most.txt')
-verydict = getTextData('BasicEmotionDict/very.txt')
-moredict = getTextData('BasicEmotionDict/more.txt')
-ishdict = getTextData('BasicEmotionDict/ish.txt')
-insufficientdict = getTextData('BasicEmotionDict/insufficiently.txt')
-inversedict = getTextData('BasicEmotionDict/inverse.txt')
+mostdict = getTextData(pathPrefix + 'most.txt')
+verydict = getTextData(pathPrefix + 'very.txt')
+moredict = getTextData(pathPrefix + 'more.txt')
+ishdict = getTextData(pathPrefix + 'ish.txt')
+insufficientdict = getTextData(pathPrefix + 'insufficiently.txt')
+inversedict = getTextData(pathPrefix + 'inverse.txt')
 
 # Load dataList
-dataList = getTextData('sina_user_weibos_1386599408.csv')
+# dataList = getTextData('sina_user_weibos_1386599408.csv')
+dataList = getTextData('weibotest.csv')
+logging.info('Finishing retrieving data from files to variables in memory')
 
 
 def getSentences(data):
@@ -92,20 +101,22 @@ def getSingleSentenceScore(sentence):
     negScore = 0
     wordIndex = 0
     sentimentWordIndex = 0
+    outputNeuralwords = open(pathPrefix + 'neuralwords', 'a')
     for word in wordList:
-        print word.encode('utf-8')
+        # print word.encode('utf-8')
         # count basic sentiment word
 
-        if word in posdict or word in negdict:
+        if word in poswords or word in negwords:
             baseScore = 1
+            # print sentimentWordIndex, wordIndex
             for degreeWord in wordList[sentimentWordIndex:wordIndex]:
                 baseScore = considerSentimentLevel(degreeWord, baseScore)
-            if word in posdict:  #consider many degree adv words by baseScore
+            if word in poswords:  #consider many degree adv words by baseScore
                 if baseScore < 0:
                     negScore -= baseScore
                 elif baseScore > 0:  
                     posScore += baseScore
-            elif word in negdict:
+            elif word in negwords:
                 if baseScore < 0:
                     posScore -= baseScore
                 elif baseScore > 0:  
@@ -116,22 +127,27 @@ def getSingleSentenceScore(sentence):
                 posScore += 2 
             elif posScore < negScore:
                 negScore += 2
+
+        elif word not in neuralwords:
+            outputNeuralwords.write('\n' + word.encode('utf-8'))
         wordIndex += 1
-        print posScore, negScore
+        # print posScore, negScore
+    outputNeuralwords.close()
 
     return [posScore, negScore]
-
 
 def getAllSentencesScore(data):
     sentences = getSentences(data)
     score = []
     for sentence in sentences:
-        print sentence.encode('utf-8')
+        # print sentence.encode('utf-8')
         score.append(getSingleSentenceScore(sentence))
     return score
 
 def statisticalProcess(scoreList):
     newScoreList = []
+    logging.info('Begin statisticalProcess')
+    logging.info('......')
     for score in scoreList:
         score_array = np.array(score)
         Pos = np.sum(score_array[:,0])
@@ -141,25 +157,37 @@ def statisticalProcess(scoreList):
         StdPos = np.std(score_array[:,0])
         StdNeg = np.std(score_array[:,1])
         newScoreList.append([Pos, Neg, AvgPos, AvgNeg, StdPos, StdNeg])
+    logging.info('Finish statisticalProcess')
     return newScoreList
 
 def getScore(dataList):
-	scoreList = []
-	for data in dataList:
-		scoreList.append(getAllSentencesScore(data))
+    scoreList = []
+    logging.info('Begin to getAllSentencesScore')
+    logging.info('......')
+    for data in dataList:
+        data = re.sub(r"[a-zA-Z0-9_:/\'\"]", " ", data)  #delete words containing char and digit
+        scoreList.append(getAllSentencesScore(data))
+    logging.info('Finish getAllSentencesScore')
 
-	return statisticalProcess(scoreList)
+    return statisticalProcess(scoreList)
 
 def writeScoreIntoFile(scoreList, filePath):
     outputFile = open(filePath,'w')
+    logging.info('Begin to write data into ' + filePath)
     for score in scoreList:
         outputFile.write('%4s %4s %16s %16s %16s %16s \n' % (str(score[0]),str(score[1]), str(score[2]), str(score[3]), str(score[4]), str(score[5])))
     outputFile.close()
+    logging.info('......')
+    logging.info('Finish writing data into ' + filePath)
 
 
 def getScoreFile(dataList, filePath):
-	score = getScore(dataList)
-	writeScoreIntoFile(score, filePath)
+    score = getScore(dataList)
+    writeScoreIntoFile(score, filePath)
 
 if __name__ == '__main__':
-	getScoreFile(dataList, 'score.txt')
+    logging.info('Main function begin!')
+    logging.info('-----------------------------')
+    getScoreFile(dataList, 'score.txt')
+    logging.info('-----------------------------')
+    logging.info('Main function ended!')

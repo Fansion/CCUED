@@ -9,6 +9,10 @@ build
 #txt
 test.txt
 datalist.txt
+情感分析.txt
+
+#
+情感词典情感分析.md.odt
 
 #xls
 sina_user_weibos_1386599408.xls
