@@ -5,6 +5,7 @@
 *.egg-info
 dist
 build
+demo.py
 
 #txt
 test.txt
@@ -13,6 +14,7 @@ datalist.txt
 
 #
 情感词典情感分析.md.odt
+weibotest.csv
 
 #xls
 sina_user_weibos_1386599408.xls
